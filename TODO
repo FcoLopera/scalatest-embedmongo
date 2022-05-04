@@ -1,6 +1,6 @@
--> revoir l'api "classic" pour supprimer le 'var mongoProps: MongodProps = null'
--> ajouter la fonctionalité check port (voir http-server)
--> utiliser reactivemongo plutôt que salat pour les tests
--> retirer la feature "withEmbedMongoFixture" (car marche pas bien)
--> introduire MongoTestSuite trait
+-> review the "classic" api to remove the 'var mongoProps:MongodProps=null'
+-> add check port functionality (check http-server)
+-> use reactivemongo instead of salat for testing
+-> Remove featrue "withEmbedMongoFixture" (it does not work properly)
+-> Add MongoTestSuite trait
 

@@ -1,12 +1,12 @@
 package com.github.simplyscala
 
 import de.flapdoodle.embed.mongo.distribution.Version
-import de.flapdoodle.embed.mongo.{Command, MongodProcess, MongodExecutable, MongodStarter}
-import de.flapdoodle.embed.mongo.config.{Net, MongodConfigBuilder}
+import de.flapdoodle.embed.mongo.{MongodExecutable, MongodProcess, MongodStarter}
+import de.flapdoodle.embed.mongo.config.{Defaults, MongodConfig, Net}
+import de.flapdoodle.embed.mongo.packageresolver.Command
 import de.flapdoodle.embed.process.runtime.Network
-import de.flapdoodle.embed.process.config.IRuntimeConfig
-import de.flapdoodle.embed.process.config.io.ProcessOutput
-import de.flapdoodle.embed.mongo.config.RuntimeConfigBuilder
+import de.flapdoodle.embed.process.config.RuntimeConfig
+import de.flapdoodle.embed.process.extract.UserTempNaming
 
 
 /**
@@ -14,15 +14,18 @@ import de.flapdoodle.embed.mongo.config.RuntimeConfigBuilder
  */
 trait MongoEmbedDatabase {
 
-    private val runtimeConfig = new RuntimeConfigBuilder()
-        .defaults(Command.MongoD)
-        .processOutput(ProcessOutput.getDefaultInstanceSilent())
-        .build()
+    val command = Command.MongoD
+
+    private val runtimeConfig = Defaults.runtimeConfigFor(command)
+      .artifactStore(Defaults.extractedArtifactStoreFor(command)
+        .withDownloadConfig(Defaults.downloadConfigFor(command).build())
+        .executableNaming(new UserTempNaming()))
+      .build()
 
     protected def mongoStart(port: Int = 12345,
                              host: String = "127.0.0.1",
-                             version: Version = Version.V3_3_1,
-                             runtimeConfig: IRuntimeConfig = runtimeConfig): MongodProps = {
+                             version: Version = Version.V3_6_22,
+                             runtimeConfig: RuntimeConfig = runtimeConfig): MongodProps = {
         val mongodExe: MongodExecutable = mongodExec(host, port, version, runtimeConfig)
         MongodProps(mongodExe.start(), mongodExe)
     }
@@ -35,17 +38,17 @@ trait MongoEmbedDatabase {
     protected def withEmbedMongoFixture(port: Int = 12345,
                                         host: String = "127.0.0.1",
                                         version: Version = Version.V3_3_1,
-                                        runtimeConfig: IRuntimeConfig = runtimeConfig)
+                                        runtimeConfig: RuntimeConfig = runtimeConfig)
                                        (fixture: MongodProps => Any) {
         val mongodProps = mongoStart(port, host, version, runtimeConfig)
         try { fixture(mongodProps) } finally { Option(mongodProps).foreach( mongoStop ) }
     }
 
-    private def runtime(config: IRuntimeConfig): MongodStarter = MongodStarter.getInstance(config)
+    private def runtime(config: RuntimeConfig): MongodStarter = MongodStarter.getInstance(config)
 
-    private def mongodExec(host: String, port: Int, version: Version, runtimeConfig: IRuntimeConfig): MongodExecutable =
+    private def mongodExec(host: String, port: Int, version: Version, runtimeConfig: RuntimeConfig): MongodExecutable =
         runtime(runtimeConfig).prepare(
-            new MongodConfigBuilder()
+            MongodConfig.builder()
                 .version(version)
                 .net(new Net(host, port, Network.localhostIsIPv6()))
                 .build()
